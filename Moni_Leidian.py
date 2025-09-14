@@ -400,7 +400,7 @@ class Dnconsole:
 # 启动模拟器并打开APP
 if __name__ == "__main__":
     index = 0  # 模拟器序号（根据实际情况修改）
-    package_name = "package:com.qidian.QDReader"  # APP包名（根据实际情况修改）
+    package_name = "com.xhtt.app.fzjh"  # APP包名（根据实际情况修改）
 
     # 启动模拟器
     print("启动模拟器...")
