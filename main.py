@@ -3,7 +3,13 @@ import time
 import cv2
 import numpy as np
 import logging
+import pytesseract
+import base64
+from PIL import Image
+import pyautogui
 from typing import Tuple, Optional, List, Dict
+import json
+import requests
 
 # 引入底层模拟器控制
 from Moni_Leidian import Dnconsole
@@ -20,6 +26,79 @@ logging.basicConfig(
 logger = logging.getLogger("JiangHuAuto")
 
 class JiangHuAuto:
+    def click_text(self, target_text: str, delay: float = 0.5, min_score: float = 0.5, fuzzy: bool = True) -> bool:
+        """
+        使用Umi-OCR API识别屏幕上的文字并点击指定文字位置。
+        支持置信度过滤和模糊匹配。
+
+        Args:
+            target_text: 需要点击的文字
+            delay: 点击后的延迟时间（秒）
+            min_score: 最低置信度（0~1）
+            fuzzy: 是否模糊匹配（True: 包含即可，False: 完全匹配）
+        Returns:
+            bool: 是否成功点击
+        """
+        screenshot_path = self.screenshot_path
+        if not self.take_screenshot():
+            logger.error("截屏失败，无法进行OCR识别")
+            return False
+        try:
+            # 读取图片并转为base64
+            with open(screenshot_path, "rb") as f:
+                img_bytes = f.read()
+            img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+
+            # 调用Umi-OCR API，返回box格式
+            url = "http://127.0.0.1:1224/api/ocr"
+            data = {
+                "base64": img_base64,
+                "options": {
+                    "data.format": "box"
+                }
+            }
+            headers = {"Content-Type": "application/json"}
+            data_str = json.dumps(data)
+            response = requests.post(url, data=data_str, headers=headers)
+            response.raise_for_status()
+            res_dict = json.loads(response.text)
+            logger.info(res_dict)
+
+            # 检查返回结构
+            if res_dict.get("code") != 100 or not isinstance(res_dict.get("data"), list):
+                logger.error(f"OCR接口返回异常: {res_dict}")
+                return False
+
+            # 查找目标文字
+            for item in res_dict["data"]:
+                text = item.get("text", "").strip()
+                score = item.get("score", 1.0)
+                box = item.get("box", None)
+                # 置信度过滤
+                if score < min_score:
+                    continue
+                # 匹配方式
+                match = (target_text in text) if fuzzy else (text == target_text)
+                if match and box and len(box) == 4:
+                    # box为四个点 [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
+                    xs = [pt[0] for pt in box]
+                    ys = [pt[1] for pt in box]
+                    center_x = sum(xs) // 4
+                    center_y = sum(ys) // 4
+                    screenWidth, screenHeight = pyautogui.size()
+                    print(f"屏幕宽度: {screenWidth}, 屏幕高度: {screenHeight}")
+                    # 获取当前鼠标位置
+                    currentX, currentY = pyautogui.position()
+                    print(f"当前鼠标位置: X={currentX}, Y={currentY}")
+                    Dnconsole.touch(0,center_x, center_y)
+                    logger.info(f"点击文字 '{target_text}' 位置: ({center_x}, {center_y}), 置信度: {score}")
+                    time.sleep(delay)
+                    return True
+            logger.warning(f"未找到目标文字: {target_text}")
+            return False
+        except Exception as e:
+            logger.error(f"OCR识别或点击异常: {str(e)}")
+            return False
     def __init__(self, emulator_index: int = 0, template_dir: str = "templates"):
         self.emulator_index = emulator_index
         self.template_dir = template_dir
@@ -154,23 +233,15 @@ if __name__ == "__main__":
     print("模拟器实例数量:", len(Dnconsole.get_list()))
     while not Dnconsole.is_running(index):
         print("等待模拟器启动...")
-        time.sleep(15)
+        time.sleep(2)
     print("模拟器已启动")
     print("启动APP...")
     Dnconsole.invokeapp(index, package_name)
     print("APP已启动")
 
     # 初始化自动化脚本
+
     auto = JiangHuAuto(emulator_index=index, template_dir="E:/leidian/start")
     #auto.main_loop(interval=300)
-
-    if auto.click_template('qq'):
-        logger.info("已点击开始游戏")
-    else:
-        logger.warning("未识别到开始游戏按钮")
-
-    time.sleep(30)
-    if auto.click_template('jianghu'):
-        logger.info("已点击江湖")
-    else:
-        logger.warning("未识别到江湖按钮")
+    target_text = "任务"
+    auto.click_text(target_text, min_score=0.7, fuzzy=True)

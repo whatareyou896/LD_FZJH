@@ -5,6 +5,9 @@ import numpy as np
 import subprocess
 import logging
 from typing import Tuple, Optional, List, Dict
+import pytesseract
+from PIL import Image
+import pyautogui
 
 # 配置日志
 logging.basicConfig(
@@ -19,6 +22,41 @@ logger = logging.getLogger("JiangHuAuto")
 
 
 class JiangHuAuto:
+    def click_text(self, target_text: str, lang: str = 'chi_sim', delay: float = 0.5) -> bool:
+        """
+        使用OCR识别屏幕上的文字并点击指定文字位置
+
+        Args:
+            target_text: 需要点击的文字
+            lang: OCR语言（如中文'chi_sim'，英文'eng'）
+            delay: 点击后的延迟时间（秒）
+        Returns:
+            bool: 是否成功点击
+        """
+        # 截屏
+        screenshot_path = self.screenshot_path
+        if not self.take_screenshot():
+            logger.error("截屏失败，无法进行OCR识别")
+            return False
+        try:
+            img = Image.open(screenshot_path)
+            data = pytesseract.image_to_data(img, lang=lang, output_type=pytesseract.Output.DICT)
+            n_boxes = len(data['level'])
+            for i in range(n_boxes):
+                text = data['text'][i].strip()
+                if text == target_text:
+                    (x, y, w, h) = (data['left'][i], data['top'][i], data['width'][i], data['height'][i])
+                    center_x = x + w // 2
+                    center_y = y + h // 2
+                    pyautogui.click(center_x, center_y)
+                    logger.info(f"点击文字 '{target_text}' 位置: ({center_x}, {center_y})")
+                    time.sleep(delay)
+                    return True
+            logger.warning(f"未找到目标文字: {target_text}")
+            return False
+        except Exception as e:
+            logger.error(f"OCR识别或点击异常: {str(e)}")
+            return False
     def __init__(self, emulator_index: int = 0, template_dir: str = "templates"):
         """
         初始化自动化脚本

@@ -91,7 +91,7 @@ class Dnconsole:
     # 请根据自己电脑配置
     console = 'D:\\leidian\\LDPlayer9\\dnconsole.exe '
     ld = 'D:\\leidian\\LDPlayer9\\ld.exe '
-    share_path = 'F:/share/Pictures'
+    share_path = 'E:/leidian/remote'
 
     # 获取模拟器列表
     @staticmethod
@@ -398,21 +398,3 @@ class Dnconsole:
                 return i, loc
         return -1, None
 # 启动模拟器并打开APP
-if __name__ == "__main__":
-    index = 0  # 模拟器序号（根据实际情况修改）
-    package_name = "com.xhtt.app.fzjh"  # APP包名（根据实际情况修改）
-
-    # 启动模拟器
-    print("启动模拟器...")
-    Dnconsole.launch(index)
-    # 等待模拟器进入Android
-    print("模拟器实例数量:", len(Dnconsole.get_list()))
-    while not Dnconsole.is_running(index):
-        print("等待模拟器启动...")
-        time.sleep(15)
-    print("模拟器已启动")
-
-    # 启动APP
-    print("启动APP...")
-    Dnconsole.invokeapp(index, package_name)
-    print("APP已启动")
