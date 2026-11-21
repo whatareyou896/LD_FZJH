@@ -221,7 +221,7 @@ class JiangHuAuto:
         logger.info("主循环结束")
 
 if __name__ == "__main__":
-    # 启动模拟器并打开APP
+    # 启动模拟器并打开APP1111
     index = 0
     package_name = "com.xhtt.app.fzjh"
     print("启动模拟器...")
