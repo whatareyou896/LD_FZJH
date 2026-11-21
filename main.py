@@ -85,11 +85,7 @@ class JiangHuAuto:
                     ys = [pt[1] for pt in box]
                     center_x = sum(xs) // 4
                     center_y = sum(ys) // 4
-                    screenWidth, screenHeight = pyautogui.size()
-                    print(f"屏幕宽度: {screenWidth}, 屏幕高度: {screenHeight}")
-                    # 获取当前鼠标位置
-                    currentX, currentY = pyautogui.position()
-                    print(f"当前鼠标位置: X={currentX}, Y={currentY}")
+
                     Dnconsole.touch(0,center_x, center_y)
                     logger.info(f"点击文字 '{target_text}' 位置: ({center_x}, {center_y}), 置信度: {score}")
                     time.sleep(delay)
@@ -240,8 +236,8 @@ if __name__ == "__main__":
     print("APP已启动")
 
     # 初始化自动化脚本
-
+    time.sleep(2)
     auto = JiangHuAuto(emulator_index=index, template_dir="E:/leidian/start")
     #auto.main_loop(interval=300)
-    target_text = "任务"
+    target_text = "点击开始游戏"
     auto.click_text(target_text, min_score=0.7, fuzzy=True)
